@@ -20,6 +20,8 @@ app.get('/', (req, res) => {
 
 
 const uri = process.env.DATABASE_ACCESS
+
+
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 client.connect(err => {
     if (err) {
@@ -31,6 +33,32 @@ client.connect(err => {
     }
 });
 
+
+const run = async () =>{
+    try{
+        const serviceCollection = client.db('musico').collection('services')
+
+        // load services from database and limit 
+        app.get('/services', async (req , res)=>{
+            
+            const seeLimit =parseInt(req.query.service)
+            const query = {}
+            const count = await serviceCollection.estimatedDocumentCount()
+            const cursor = serviceCollection.find(query) 
+            const services = await cursor.limit(seeLimit).toArray()
+            res.send({count,services})
+
+        })
+    }
+    catch(err){
+        console.log(err.message);
+    }finally{
+
+    }
+
+}
+
+run().catch(err =>console.log(err.message))
 
 
 app.listen(port,()=>{
