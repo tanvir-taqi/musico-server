@@ -64,7 +64,7 @@ const run = async () =>{
         // post reviews in database
         app.post('/reviews', async (req, res) => {
             const review = req.body
-            console.log(review);
+            
             const reviewId = await reviewCollection.insertOne(review)
             res.send(reviewId)
         })
@@ -74,7 +74,7 @@ const run = async () =>{
         app.get('/reviews/:id', async (req, res) => {
             const reviewId = req.params.id
             const query = {service : reviewId}
-            const cursor = reviewCollection.find(query)
+            const cursor = reviewCollection.find(query).sort({date: -1})
             const review = await cursor.toArray()
             res.send(review)
         })
