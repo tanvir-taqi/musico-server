@@ -37,6 +37,7 @@ client.connect(err => {
 const run = async () =>{
     try{
         const serviceCollection = client.db('musico').collection('services')
+        const reviewCollection = client.db('musico').collection('reviews')
 
         // load services from database and limit 
         app.get('/services', async (req , res)=>{
@@ -50,14 +51,36 @@ const run = async () =>{
 
         })
 
-        // load singleservice details 
+        // load single service details 
         app.get('/services/:id', async (req, res)=>{
             const serviceId = req.params.id
-            console.log(serviceId);
+            
             const query = {_id: ObjectId(serviceId)}
             const service = await serviceCollection.findOne(query)
             res.send(service)
         })
+
+
+        // post reviews in database
+        app.post('/reviews', async (req, res) => {
+            const review = req.body
+            console.log(review);
+            const reviewId = await reviewCollection.insertOne(review)
+            res.send(reviewId)
+        })
+
+
+        // get review by id 
+        app.get('/reviews/:id', async (req, res) => {
+            const reviewId = req.params.id
+            const query = {service : reviewId}
+            const cursor = reviewCollection.find(query)
+            const review = await cursor.toArray()
+            res.send(review)
+        })
+
+
+
     }
     catch(err){
         console.log(err.message);
