@@ -5,6 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000
 const app = express();
 require('dotenv').config()
+const jwt = require('jsonwebtoken')
 
 
 // musico
@@ -34,10 +35,37 @@ client.connect(err => {
 });
 
 
+
+const verifyJwt = (req,res,next) =>{
+    const authHeader = req.headers.authorization
+    if(!authHeader){
+       return res.status(401).send({message:"unothorized user"})
+    }
+    const token = authHeader.split(' ')[1]
+    jwt.verify(token,process.env.ACCESS_TOKEN_SECRET , (err,decoded)=>{
+        if(err){
+          return  res.status(401).send({message:"unothorized user"})
+        }
+        req.decoded = decoded
+        next()
+    })
+}
+
+
 const run = async () =>{
     try{
         const serviceCollection = client.db('musico').collection('services')
         const reviewCollection = client.db('musico').collection('reviews')
+
+
+        //jwt token post api 
+        app.post('/jwt',(req,res)=>{
+            const user = req.body
+            const token = jwt.sign(user, process.env.ACCES_TOKEN_SECRET )
+            res.send({token})
+
+        })
+
 
         // load services from database and limit 
         app.get('/services', async (req , res)=>{
@@ -90,9 +118,20 @@ const run = async () =>{
 
         // get my review by email 
 
-        app.get('/reviews', async (req, res) => {
-            const email = req.query.email
-            const query = {email: email}
+        app.get('/reviews', verifyJwt, async (req, res) => {
+
+            const decoded = req.decoded
+            let query = {}
+
+            if(decoded.email !== req.query.email){
+                return  res.status(403).send({message:"unothorized user"})
+            }
+          
+            
+            if(req.query.email){
+                query = {email: req.query.email}
+            }
+          
             const cursor = reviewCollection.find(query)
             const myReviews = await cursor.toArray()
             res.send(myReviews)      
@@ -103,7 +142,7 @@ const run = async () =>{
 
         // delete review by id 
 
-        app.delete('/reviews/:id', async (req,res)=>{
+        app.delete('/reviews/:id',verifyJwt, async (req,res)=>{
             const id = req.params.id 
             
             const query = {_id : ObjectId(id)}
