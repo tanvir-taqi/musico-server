@@ -51,6 +51,15 @@ const run = async () =>{
 
         })
 
+        //post a service
+        app.post('/services', async (req, res) => {
+            const service = req.body
+            
+            const result = await serviceCollection.insertOne(service)
+            res.send(result)
+        })
+
+
         // load single service details 
         app.get('/services/:id', async (req, res)=>{
             const serviceId = req.params.id
