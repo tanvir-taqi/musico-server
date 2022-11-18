@@ -42,8 +42,8 @@ const verifyJwt = (req, res, next) => {
         return res.status(401).send({ message: "unothorized user" })
     }
     const token = authHeader.split(' ')[1]
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        if (err) {
+    jwt.verify(token, process.env.ACCES_TOKEN_SECRET, (error, decoded) => {
+        if (error) {
             return res.status(401).send({ message: "unothorized user" })
         }
         req.decoded = decoded
@@ -61,7 +61,7 @@ const run = async () => {
         //jwt token post api 
         app.post('/jwt', (req, res) => {
             const user = req.body
-            const token = jwt.sign(user, process.env.ACCES_TOKEN_SECRET, { expiresIn: '10h' })
+            const token = jwt.sign(user, process.env.ACCES_TOKEN_SECRET)
             res.send({ token })
 
         })
@@ -107,6 +107,17 @@ const run = async () => {
         })
 
 
+        // get all reviews 
+
+        app.get('/allreviews', async (req, res) => {
+
+            const query = {}
+            const cursor =  reviewCollection.find(query)
+            const reviews = await cursor.toArray()
+            res.send(reviews)
+
+        })
+
         // get review by id 
         app.get('/reviews/:id', async (req, res) => {
             const reviewId = req.params.id
@@ -117,19 +128,24 @@ const run = async () => {
         })
 
 
+        // get review by reviewId
 
+        app.get('/review/:id', async (req, res) => {
+            const reviewId = req.params.id
+            const query = { _id: ObjectId(reviewId) }
+            const cursor = reviewCollection.find(query)
+            const review = await cursor.toArray()
+            res.send(review)
+        })
 
         // get my review by email 
 
-        app.get('/reviews', async (req, res) => {
+        app.get('/reviews', verifyJwt, async (req, res) => {
 
-            // const decoded = req.decoded
-            // console.log(decoded);
-
-
-            // if(decoded.email !== req.query.email){
-            //     return  res.status(403).send({message:"unothorized user"})
-            // }
+            const decoded = req.decoded
+            if (decoded.email !== req.query.email) {
+                return res.status(403).send({ message: "unothorized user" })
+            }
 
             let query = {}
 
@@ -148,22 +164,22 @@ const run = async () => {
         app.patch('/reviews/:id', async (req, res) => {
             const reviewId = req.params.id
             const review = req.body
-            
+
             const query = { _id: ObjectId(reviewId) }
             const updateDoc = {
                 $set: {
                     message: review.message
                 },
             };
-            const result =  await reviewCollection.updateOne(query , updateDoc)
-            res.send(result) 
+            const result = await reviewCollection.updateOne(query, updateDoc)
+            res.send(result)
         })
 
 
 
         // delete review by id 
 
-        app.delete('/reviews/:id',  async (req, res) => {
+        app.delete('/reviews/:id', async (req, res) => {
             const id = req.params.id
 
             const query = { _id: ObjectId(id) }
