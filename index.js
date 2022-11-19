@@ -65,6 +65,18 @@ const run = async () => {
         })
 
 
+        // load all services 
+        app.get('/allservices', async (req, res) => {
+
+            
+            const query = {}
+            const count = await serviceCollection.estimatedDocumentCount()
+            const cursor = serviceCollection.find(query)
+            const services = await cursor.toArray()
+            res.send({ count, services })
+
+        })
+
         // load services from database and limit 
         app.get('/services', async (req, res) => {
 
